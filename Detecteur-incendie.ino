@@ -2,10 +2,14 @@
 Nom ......... : Detecteur-incendie.ino
 Role ........ : Code pour Arduino UNO s'insérant dans un système complexe de détection d'incendie.
                 Ce code permet de recevoir sur un Arduino UNO des chaînes de caractères venant d'une
-                platine Raspberry Pi par l'UART ,du type : 'Alerte#0468225431' désignant le souhait
+                platine Raspberry Pi par l'UART ,du type : 'Alerte#066822XXXX' désignant le souhait
                 de prévenir l'utilisateur dont le numéro de téléphone suit, de l'apparition d'un incendie
                 par l'envoi d'un sms.
                 L'arduino UNO est connecté à un shield Arduino GSM.
+
+                Pour plus de conviavialité un affichage du déroulement du programme se fait sur un écran lcd i2c
+                de chez Seed : Grove-LCD RGB Backlight, penser à télécharger et installer la bibliothèque :
+                https://github.com/Seeed-Studio/Grove_LCD_RGB_Backlight
 
 Auteur ...... : J.Serrand
 Mail ........ : joris.serrand@rascol.net
@@ -40,7 +44,7 @@ const int colorG = 0;
 const int colorB = 0;
 
 //Définitions pour l'Arduino GSM Shield
-#define PINNUMBER "" //Définition du code pin de la carte sim
+#define PINNUMBER "XXXX" //Définition du code pin de la carte sim /!\ Entre guillemets !
 GSM gsmAccess; // include a 'true' parameter for debug enabled
 GSM_SMS sms;//Construction d'un objet sms à partir du constructeur GSM_SMS
 
@@ -89,32 +93,42 @@ void loop()
   String NumeroString, DemandeRaspPi; //Déclaration de 2 chaines contenant les messages de reception et de retour
   NumeroString=String();//Initialisation avec rien
   DemandeRaspPi=String();//Initialisation avec rien
-  char NumeroChar[10];//Déclaration d'un tableau de char de 10 cases qui contiendra le num a utiliser pour le sms
-  char txtMsg[100]="DETECTION INCENDIE ! \nLe détecteur d'incendie a été déclenché dans votre logement";
+  char NumeroChar[11];//Déclaration d'un tableau de char de 10 cases qui contiendra le num a utiliser pour le sms
+  char txtMsg[100]="DETECTION INCENDIE ! \nLe detecteur d'incendie a ete declenche dans votre logement";
 
   if(Serial.available() > 0)//Attente de la réception d'un message venant du RaspPi sur le serial
       {
         DemandeRaspPi = Serial.readStringUntil('#'); //Lecture du message jusqu'au caractère '#'
         NumeroString = Serial.readString(); //Lecture du num dans la suite du message
-        NumeroString.toCharArray(NumeroChar,10); //Stockage du num dans NumeroChar
+        NumeroString.toCharArray(NumeroChar,11); //Stockage du num dans NumeroChar
       }
 
   if (DemandeRaspPi=="alerte") //Si le message = "alerte" envoi d'un sms pour incendie
       {
-        lcd.clear();
-        lcd.setCursor(0,0);
+        lcd.clear(); //Effacement du lcd
+        lcd.setCursor(0,0); //On ecrit en haut à gauche
         lcd.print("Alerte sms :");
         lcd.setCursor(0,1);
-        lcd.print(NumeroChar);
+        lcd.print(NumeroChar); //On affiche le num auquel le message va etre envoyé
         delay(1000);
 
         sms.beginSMS(NumeroChar);
+        lcd.clear();
+        lcd.setCursor(0,0);
+        lcd.print("begin SMS : OK"); //Le numero a bien été saisi
+        delay(1000);
+
         sms.print(txtMsg);
-        sms.endSMS();
+        lcd.clear();
+        lcd.setCursor(0,0);
+        lcd.print("print SMS : OK"); //Le contenu du message a bien été saisi
+        delay(1000);
+
+        sms.endSMS();//Envoi du message
 
         lcd.clear();
         lcd.setCursor(0,0);
-        lcd.print("Message envoye !");
+        lcd.print("Message envoye !"); // Le message a bien été envoyé
         delay(1000);
 
         DemandeRaspPi=String();//Reset de la variable
